@@ -15,11 +15,11 @@ def main():
     parser.add_argument("--load_backbone",default = "",type = str,help = "Use customized backbone instead of hugging face provided")
     parser.add_argument("--save_to", type = str,default = "")
     parser.add_argument("--resume_from",type = str, default = "")
-    
+
     parser.add_argument("--task_type",default = "sst2",type=str,help="Trained Task")
     parser.add_argument("--data_path",default = "",type = str, help = "Path to the data")
     parser.add_argument("--verb", default = "", type = str, help = "Verbalizers, seperating by commas")
-    
+
     parser.add_argument("--device", default = "cuda:0", type = str)
     parser.add_argument("--random_seed",default = 0,type = int, help = "random seed used")
     parser.add_argument("--epoch",default = 4, type = int,help = "how many epochs")
@@ -52,8 +52,8 @@ def main():
     args.verb = args.verb.split(",")
     if(not os.path.exists(args.save_to)):
         os.makedirs(args.save_to)
-    
-    
+
+
     t=trainer(args)
     t.train(train, valid, test, num_train_epochs = args.epoch)
 

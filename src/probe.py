@@ -26,7 +26,9 @@ def main():
 
     parser.add_argument("--task_type",default = "sst2",type=str,help="Trained Task")
     parser.add_argument("--data_path",default = "/home/wxz/wky_workspace/skillneuron/grandmother-neuron/data/raw/sst2",type = str, help = "Path to the data")
+    # NOTE: 标签词语映射器
     parser.add_argument("--verb", default = "", type = str, help = "Verbalizers, seperating by commas")
+
 
     parser.add_argument("--probe_type",default = "acc", choices=["pos","acc","acc_mean","acc_max","prompt_act","speed"], type = str, help = "kind of probing, between pos and acc")
     parser.add_argument("--pos", default = "9,3,1893", type = str, help = "position, used when probing a single neuron, seperated by commas")
@@ -57,6 +59,7 @@ def main():
 
 
     # Preprocessing args
+    # NOTE：verb默认为空，可以先不用管意图
     args.verb = args.verb.split(",")
 
 
@@ -71,40 +74,45 @@ def main():
         t.load(args.resume_from)
 
     # Test subnetwork temporary
+    # NOTE: 和第五节预测
     if args.add_mask:
         t.addmask(args.add_mask, thspath = args.ths_path ,cmp = False)
 
 
-
+    # NOTE: 获取某一个神经元的激活值, 需要指定layer和idx(某层的第几个神经元)
     if(args.probe_type == "pos"):
         print(args.pos)
         pos = [int(_) for _ in args.pos.split(",")]
         create_dir(args.save_to + "/pos_dev")
         create_dir(args.save_to + "/pos_test")
         torch.save(t.probe_pos(valid, pos),args.save_to + "/pos_dev/" + args.pos)
-        torch.save(t.probe_pos(test, pos),args.save_to + "/pos_test/"+args.pos)
+        torch.save(t.probe_pos(test, pos),args.save_to + "/pos_test/" + args.pos)
 
-
+    # NOTE: guide给出的预测类型为acc，先看这一个
+    # NOTE: 获取所有神经元的预预测精度
     if(args.probe_type == "acc"):
         torch.save(t.probe_avg(train),args.save_to + "/train_avg")
         torch.save(t.probe_acc(valid, args.save_to + "/train_avg"),args.save_to+"/dev_perf")
         torch.save(t.probe_acc(test, args.save_to + "/train_avg"),args.save_to+"/test_perf")
 
 
+    # NOTE: 见论文4.1节，这个采用了 max_pooling
     if(args.probe_type == "acc_mean"):
         torch.save(t.probe_avg_mean(train),args.save_to + "/train_mean_avg")
         torch.save(t.probe_acc_mean(valid, args.save_to + "/train_mean_avg"),args.save_to+"/dev_mean_perf")
         torch.save(t.probe_acc_mean(test, args.save_to + "/train_mean_avg"),args.save_to+"/test_mean_perf")
-
+    # NOTE: 见论文4.1节，这个采用了 mean_pooling
     if(args.probe_type == "acc_max"):
         torch.save(t.probe_avg_max(train),args.save_to + "/train_max_avg")
         torch.save(t.probe_acc_max(valid, args.save_to + "/train_max_avg"),args.save_to+"/dev_max_perf")
         torch.save(t.probe_acc_max(test, args.save_to + "/train_max_avg"),args.save_to+"/test_max_perf")
 
-
+    # NOTE: 获取 mask token 的激活值， 6.2节需要使用到
+    # NOTE: 需要回顾一下mask token 在 MLM中的深层玩法
     if(args.probe_type == "prompt_act"):
         torch.save(t.probe_prompt(valid, pos),args.save_to + "/prompt_activation")
 
+    # NOTE: 获取测试性能
     if(args.probe_type == "speed"):
         times = []
         perfs = []
@@ -120,7 +128,7 @@ def main():
             t.logger.info(perfs[-1])
         torch.save(perfs,args.save_to+"/inference_perf")
         torch.save(times,args.save_to+"/inference_time")
-        
+
 
 if __name__ == "__main__":
     main()

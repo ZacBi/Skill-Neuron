@@ -4,8 +4,10 @@ import torch
 roberta = AutoModelForMaskedLM.from_pretrained("roberta-base")
 roberta.config.intermediate_size = int(3072*0.02)
 newroberta = AutoModelForMaskedLM.from_config(roberta.config)
+# NOTE: 前三层ffn保持一致, 后面9层ffn只保留2%的神经元
 for k in range(3):
     newroberta.roberta.encoder.layer[k].intermediate = roberta.roberta.encoder.layer[k].intermediate
     newroberta.roberta.encoder.layer[k].output.dense = roberta.roberta.encoder.layer[k].output.dense
-torch.save(newroberta,"prune_structure/PruneRoberta")
-print(sum(x.numel() for x in newroberta.parameters())/sum(x.numel() for x in roberta.parameters()))
+torch.save(newroberta, "prune_structure/PruneRoberta")
+print(sum(x.numel() for x in newroberta.parameters())/sum(x.numel()
+      for x in roberta.parameters()))

@@ -31,21 +31,26 @@ class BaseModel(torch.nn.Module):
         pass
     def embed(self, input_ids):
         pass
+
+    # NOTE: typo,  Verbalizer, 空间映射器
     def getverablizer(self):
         args = self.args
         print(args.verb)
         if(len(args.verb) == 0 or args.verb[0] == ''):
+            # 下面huanjige
             positive = self.tokenizer.encode("positive")[1]
             negative = self.tokenizer.encode("negative")[1]
             neutral = self.tokenizer.encode("neutral")[1]
             conflict = self.tokenizer.encode("conflict")[1]
             if(self.args.num_labels == 2): 
+                # 标签在encoding中的位置
                 self.pos = [negative,positive]
             if(self.args.num_labels == 3):
                 self.pos = [negative,neutral,positive]
             if(self.args.num_labels == 4):
                 self.pos = [conflict,negative,neutral,positive]
         elif(len(args.verb) == 1):
+            # TODO: hardcode 用来干嘛的, 不过下面这几个先不算重点
             self.pos = random.sample(list(range(50265)),self.num_labels)
         else:
             self.pos = [self.tokenizer.encode(word)[1] for word in args.verb]
@@ -59,6 +64,8 @@ class BaseModel(torch.nn.Module):
         pass
     def optimize_parameters(self):
         pass
+
+    # TODO: 扰动实验，用来证实skill neuron的重要性
     def addmask(self, thspath, lowlayer = 0, highlayer = 12, type = "mean"):
         if(type == "mean"):
             self.bias = torch.tensor(torch.load(thspath)).cuda().mean(axis = 1)
@@ -120,6 +127,8 @@ class MLMPromptBaseModel(PromptBaseModel):
         super().__init__(args)
         self.prompt_size = args.prompt_size
         mask_embedding = self.embed(torch.tensor(self.tokenizer.mask_token_id)) 
+        # 复现时记得让arg.prompt_size - 1为128
+        # We randomly initialize each soft prompt using a normal distribution with the standard deviation as 0.03
         self.prompt = torch.nn.Parameter(torch.randn(args.prompt_size-1, mask_embedding.shape[0]).unsqueeze(dim = 0)/30)
         self.mask = torch.nn.Parameter(((torch.ones(1,1) * mask_embedding).unsqueeze(dim = 0)))
         self.pmask = torch.zeros(self.layer_num,self.layer_width)
@@ -239,7 +248,7 @@ class RobertaPrunePrompt(MLMPromptBaseModel):
     def getmodel(self):
         self.backbone = torch.load("prune_structure/PruneRoberta")
     def processoutput(self, outputs):
-        return outputs.logits[:,0,self.pos].squeeze(dim = 1)
+        return outputs.logits[:,0,self.pos].squeeze(dim = 1) 
     def intermediate(self,n):
         return self.backbone.roberta.encoder.layer[n].intermediate
     def embed(self, input_ids):
